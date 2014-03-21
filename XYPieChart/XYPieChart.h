@@ -61,6 +61,22 @@
 @property(nonatomic, assign) CGFloat selectedSliceStroke;
 @property(nonatomic, assign) CGFloat selectedSliceOffsetRadius;
 @property(nonatomic, assign) BOOL    showPercentage;
+
+//
+// additional parameters and methods for extended label drawing
+//
+@property CGFloat lineBreakTopY;
+@property CGFloat lineBreakBottomY;
+@property CGFloat labelXpositionLeft;
+@property CGFloat labelXpositionRight;
+@property(nonatomic, strong) UIFont  *smallLabelFont;
+@property BOOL showExtendedLabels;
+
+- (void)setExtendedLabelLineBreakTopY:(CGFloat)topY bottomY:(CGFloat)bottomY xPositionLeft:(CGFloat)xPositionLeft xPositionRight:(CGFloat)xPositionRight;
+//
+//
+//
+
 - (id)initWithFrame:(CGRect)frame Center:(CGPoint)center Radius:(CGFloat)radius;
 - (void)reloadData;
 - (void)setPieBackgroundColor:(UIColor *)color;

@@ -396,6 +396,183 @@ static CGPathRef CGPathCreateArc(CGPoint center, CGFloat radius, CGFloat startAn
                                     toValue:[NSNumber numberWithDouble:endToAngle+_startPieAngle] 
                                    Delegate:self];
             startToAngle = endToAngle;
+            
+            
+            //
+            //
+            //
+            //
+            // Extended label drawing addition
+            //
+            
+            
+            
+            //
+            // Explode pie
+            //
+            CGPoint currPos = layer.position;
+            double middleAngle = (layer.startAngle + layer.endAngle)/2.0;
+            CGPoint newPos = CGPointMake(currPos.x + 2*cos(middleAngle), currPos.y + 2*sin(middleAngle));
+            layer.position = newPos;
+            
+            
+            
+            
+            if (!self.showExtendedLabels)
+                continue;
+                
+            CAShapeLayer *shapeLayer = [CAShapeLayer layer];
+            [shapeLayer setBounds:layer.bounds];
+            [shapeLayer setPosition:layer.position];
+            [shapeLayer setFillColor:[[UIColor clearColor] CGColor]];
+            [shapeLayer setStrokeColor:[self.labelColor CGColor]];
+            [shapeLayer setLineWidth:1.5f];
+            [shapeLayer setLineJoin:kCALineJoinRound];
+            
+            //double middleAngle = (layer.startAngle + layer.endAngle)/2.0;
+            
+            CGPoint start = CGPointMake(_pieCenter.x + (_labelRadius * cos(middleAngle)), _pieCenter.y + (_labelRadius * sin(middleAngle)));
+
+            CGPoint midPoint = CGPointMake(_pieCenter.x + (80 * cos(middleAngle)), _pieCenter.y + (80 * sin(middleAngle)));
+            
+            //don't draw lines from pies with 0%
+            if (values[index] == 0)
+                continue;
+            
+            CGPoint labelPos;
+            
+            // Setup the line
+            CGMutablePathRef path = CGPathCreateMutable();
+            
+            //straightLine
+            if (midPoint.y > self.lineBreakTopY && midPoint.y < self.lineBreakBottomY)
+            {
+                CGPathMoveToPoint(path, NULL, start.x, start.y);
+                
+                /*
+                if (abs(midPoint.x-180) < abs(midPoint.x+40))
+                    labelPos.x = 180;
+                else
+                    labelPos.x = -40;
+                 */
+                /*
+                if (abs(midPoint.y-60) < abs(midPoint.y-100))
+                    labelPos.y = 60;
+                else
+                    labelPos.y = 100;
+                 */
+                
+                /*
+                labelPos.y = midPoint.y;
+                CGPathAddLineToPoint(path, NULL, labelPos.x, labelPos.y);
+                 */
+                CGPoint midPoint2 = CGPointMake(_pieCenter.x + (105 * cos(middleAngle)), _pieCenter.y + (105 * sin(middleAngle)));
+
+                labelPos.x = midPoint2.x;
+                labelPos.y = start.y;
+                CGPathAddLineToPoint(path, NULL, labelPos.x, labelPos.y);
+                
+            }
+            else //broken line
+            {
+                CGPathMoveToPoint(path, NULL, start.x, start.y);
+                
+                CGPathAddLineToPoint(path, NULL, midPoint.x, midPoint.y);
+                
+                if (abs(midPoint.x-self.labelXpositionRight) < abs(midPoint.x-self.labelXpositionLeft))
+                    labelPos.x = self.labelXpositionRight;
+                else
+                    labelPos.x = self.labelXpositionLeft;
+                
+                labelPos.y = midPoint.y;
+                
+                CGPathAddLineToPoint(path, NULL, labelPos.x, labelPos.y);
+            }
+            
+            [shapeLayer setPath:path];
+            CGPathRelease(path);
+            
+            [layer insertSublayer:shapeLayer atIndex:10];
+            
+            //draw the dot at the end of the line
+            CGPathAddEllipseInRect(path, NULL, CGRectMake(labelPos.x+((labelPos.x > _pieView.bounds.size.width/2)?-3:0), labelPos.y-1.5, 3, 3));
+            
+            //
+            // correctly position labels - LIBRARY OPTION showLabel SHOULD BE SET TO NO
+            // showExendedLabels should be set to YES
+            //
+            
+            //
+            // Number label
+            //
+            {
+                CATextLayer *textLayer = [CATextLayer layer];
+                textLayer.contentsScale = [[UIScreen mainScreen] scale];
+                CGFontRef font = nil;
+                if ([[[UIDevice currentDevice] systemVersion] floatValue] >= 7.0) {
+                    font = CGFontCreateCopyWithVariations((__bridge CGFontRef)(self.labelFont), (__bridge CFDictionaryRef)(@{}));
+                } else {
+                    font = CGFontCreateWithFontName((__bridge CFStringRef)[self.labelFont fontName]);
+                }
+                if (font) {
+                    [textLayer setFont:font];
+                    CFRelease(font);
+                }
+            
+                [textLayer setFontSize:self.labelFont.pointSize];
+                [textLayer setAnchorPoint:CGPointMake((labelPos.x > _pieView.bounds.size.width/2)?0.0:1.0, 0.5)];
+                [textLayer setAlignmentMode:kCAAlignmentCenter];
+                [textLayer setBackgroundColor:[UIColor clearColor].CGColor];
+                [textLayer setForegroundColor:self.labelColor.CGColor];
+                
+                NSString *textToDisplay = [NSString stringWithFormat:@"%.f", values[index]];
+
+                CGSize size = [@"000" sizeWithFont:self.labelFont];
+                [CATransaction setDisableActions:YES];
+                [textLayer setFrame:CGRectMake(0, 0, size.width, size.height)];
+                [textLayer setPosition:CGPointMake(labelPos.x, labelPos.y)];
+                [CATransaction setDisableActions:NO];
+            
+                [layer addSublayer:textLayer];
+                [textLayer setString:[NSString stringWithFormat:textToDisplay, index]];
+                [textLayer setHidden:NO];
+            }
+            
+            //
+            // small label
+            //
+            {
+                CATextLayer *textLayer = [CATextLayer layer];
+                textLayer.contentsScale = [[UIScreen mainScreen] scale];
+                CGFontRef font = nil;
+                if ([[[UIDevice currentDevice] systemVersion] floatValue] >= 7.0) {
+                    font = CGFontCreateCopyWithVariations((__bridge CGFontRef)(self.smallLabelFont), (__bridge CFDictionaryRef)(@{}));
+                } else {
+                    font = CGFontCreateWithFontName((__bridge CFStringRef)[self.smallLabelFont fontName]);
+                }
+                if (font) {
+                    [textLayer setFont:font];
+                    CFRelease(font);
+                }
+                
+                [textLayer setFontSize:self.smallLabelFont.pointSize];
+                [textLayer setAnchorPoint:CGPointMake(0.5, 0.5)];
+                [textLayer setAlignmentMode:kCAAlignmentCenter];
+                [textLayer setBackgroundColor:[UIColor clearColor].CGColor];
+                [textLayer setForegroundColor:self.labelColor.CGColor];
+                
+                CGSize size = [layer.text sizeWithFont:self.smallLabelFont];
+                [CATransaction setDisableActions:YES];
+                [textLayer setFrame:CGRectMake(0, 0, size.width, size.height)];
+                CGSize mainLabelSize = [@"000" sizeWithFont:self.labelFont];
+                [textLayer setPosition:CGPointMake(labelPos.x + ((labelPos.x > _pieView.bounds.size.width/2)?mainLabelSize.width/2:-mainLabelSize.width/2), labelPos.y + size.height + 5)];
+                [CATransaction setDisableActions:NO];
+                
+                [layer addSublayer:textLayer];
+                [textLayer setString:layer.text];
+                [textLayer setHidden:NO];
+            }
+
         }
         [CATransaction setDisableActions:YES];
         for(SliceLayer *layer in layersToRemove)
@@ -423,6 +600,14 @@ static CGPathRef CGPathCreateArc(CGPoint center, CGFloat radius, CGFloat startAn
         [CATransaction setDisableActions:NO];
         [CATransaction commit];
     }
+}
+
+- (void)setExtendedLabelLineBreakTopY:(CGFloat)topY bottomY:(CGFloat)bottomY xPositionLeft:(CGFloat)xPositionLeft xPositionRight:(CGFloat)xPositionRight
+{
+    self.lineBreakTopY = topY;
+    self.lineBreakBottomY = bottomY;
+    self.labelXpositionLeft = xPositionLeft;
+    self.labelXpositionRight = xPositionRight;
 }
 
 #pragma mark - Animation Delegate + Run Loop Timer
