@@ -410,12 +410,38 @@ static CGPathRef CGPathCreateArc(CGPoint center, CGFloat radius, CGFloat startAn
             //
             // Explode pie
             //
+            /*
             CGPoint currPos = layer.position;
-            double middleAngle = (layer.startAngle + layer.endAngle)/2.0;
-            CGPoint newPos = CGPointMake(currPos.x + 2*cos(middleAngle), currPos.y + 2*sin(middleAngle));
-            layer.position = newPos;
+            CGFloat middleAngle = (layer.startAngle + layer.endAngle)/2.0;
+            CGPoint newPos = CGPointMake(currPos.x + 2.0*cos(middleAngle), currPos.y + 2.0*sin(middleAngle));
+            //layer.position = newPos;
+            layer.allowsEdgeAntialiasing = YES;
             
+             */
+            CAShapeLayer *shapeLayer2 = [CAShapeLayer layer];
+            [shapeLayer2 setBounds:layer.bounds];
+            [shapeLayer2 setPosition:layer.position];
+            [shapeLayer2 setFillColor:[[UIColor clearColor] CGColor]];
+            [shapeLayer2 setStrokeColor:[[UIColor colorWithRed:26/255.0 green:26/255.0 blue:26/255.0 alpha:1.0f] CGColor]];
+            [shapeLayer2 setLineWidth:3.0f];
+            [shapeLayer2 setLineJoin:kCALineJoinRound];
+            CGMutablePathRef path2 = CGPathCreateMutable();
+            CGPathMoveToPoint(path2, NULL, _pieCenter.x, _pieCenter.y);
+            int line_length = 76;
+            if (index == 3)
+            {
+                CGPathAddLineToPoint(path2, NULL, _pieCenter.x + line_length*cos(layer.endAngle), _pieCenter.y + line_length*sin(layer.endAngle));
+                CGPathMoveToPoint(path2, NULL, _pieCenter.x, _pieCenter.y);
+                CGPathAddLineToPoint(path2, NULL, _pieCenter.x + line_length*cos(layer.startAngle), _pieCenter.y + line_length*sin(layer.startAngle));
+            }
+            else
+            {
+                CGPathAddLineToPoint(path2, NULL, _pieCenter.x + line_length*cos(layer.startAngle), _pieCenter.y + line_length*sin(layer.startAngle));
+            }
+            [shapeLayer2 setPath:path2];
+            [layer insertSublayer:shapeLayer2 atIndex:900];
             
+            //layer.transform = CATransform3DMakeTranslation(newPos.x, newPos.y, 0);
             
             
             if (!self.showExtendedLabels)
@@ -429,7 +455,7 @@ static CGPathRef CGPathCreateArc(CGPoint center, CGFloat radius, CGFloat startAn
             [shapeLayer setLineWidth:1.5f];
             [shapeLayer setLineJoin:kCALineJoinRound];
             
-            //double middleAngle = (layer.startAngle + layer.endAngle)/2.0;
+            double middleAngle = (layer.startAngle + layer.endAngle)/2.0;
             
             CGPoint start = CGPointMake(_pieCenter.x + (_labelRadius * cos(middleAngle)), _pieCenter.y + (_labelRadius * sin(middleAngle)));
 
